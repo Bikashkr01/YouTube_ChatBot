@@ -83,11 +83,19 @@ def build_index(video_url: str):
             )
             method = "Cached Index"
         else:
-            st.write("📥 Downloading audio...")
-            _, _, audio_path = download_audio(video_url)
+            st.write("🎙️ Searching for transcripts...")
+            # Try to get segments BEFORE downloading audio
+            segments, method = get_segments(video_id, audio_path=None)
 
-            st.write(f"🎙️ Getting transcript... (using {device.upper()})")
-            segments, method = get_segments(video_id, audio_path)
+            if not segments:
+                st.write("📥 Downloading audio for AI transcription...")
+                _, _, audio_path = download_audio(video_url)
+                st.write(f"🧠 Transcribing with AI... (using {device.upper()})")
+                segments, method = get_segments(video_id, audio_path)
+
+            if not segments:
+                st.error("Could not retrieve transcript via API or AI Transcription.")
+                st.stop()
 
             st.write("🧠 Organizing knowledge...")
             vs = create_vector_store_from_segments(segments, embeddings)

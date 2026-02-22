@@ -65,11 +65,20 @@ def get_video_dir(video_id: str) -> Path:
 
 
 def get_video_title(url: str) -> str:
-    url = normalize_youtube_url(url)
-    ydl_opts = {"quiet": True, "skip_download": True, "noplaylist": True}
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-    return info.get("title") or "Unknown title"
+    try:
+        url = normalize_youtube_url(url)
+        ydl_opts = {
+            "quiet": True, 
+            "skip_download": True, 
+            "noplaylist": True,
+            "nocheckcertificate": True,
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+        return info.get("title") or "Unknown title"
+    except Exception:
+        return "YouTube Video"
 
 
 # --------------------------
@@ -92,11 +101,9 @@ def download_audio(url: str) -> tuple[str, str, str]:
     ydl_opts = {
         "format": "worstaudio/best",
         "outtmpl": outtmpl,
-        "quiet": True,
-        "noplaylist": True,
-        "overwrites": True,
         "nocheckcertificate": True,
         "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        "extractor_args": {"youtube": {"player_client": ["android", "ios"]}},
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -215,7 +222,7 @@ def create_vector_store_from_segments(
 # --------------------------
 # 6) Combined with Segment Cache
 # --------------------------
-def get_segments(video_id: str, audio_path: str):
+def get_segments(video_id: str, audio_path: str = None):
     vdir = get_video_dir(video_id)
     cache_file = vdir / "segments.json"
 
@@ -233,12 +240,15 @@ def get_segments(video_id: str, audio_path: str):
             json.dump(segments, f)
         return segments, "YouTube Captions"
 
-    # 3. AI Fallback
-    print(f"[DEBUG] Falling back to Whisper transcription...")
-    segments = transcribe_audio_segments(audio_path)
-    
-    # Save immediately after transcription finishes
-    with open(cache_file, "w", encoding="utf-8") as f:
-        json.dump(segments, f)
+    # 3. AI Fallback (ONLY if audio_path is provided)
+    if audio_path:
+        print(f"[DEBUG] Falling back to Whisper transcription...")
+        segments = transcribe_audio_segments(audio_path)
         
-    return segments, "Whisper Transcription (AI)"
+        # Save immediately after transcription finishes
+        if segments:
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump(segments, f)
+            return segments, "Whisper Transcription (AI)"
+        
+    return None, None
