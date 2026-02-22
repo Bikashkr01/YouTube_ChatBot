@@ -129,17 +129,23 @@ def fetch_captions_segments(video_id: str):
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
         
-        # Check if list_transcripts exists, otherwise use a safer method
-        if hasattr(YouTubeTranscriptApi, 'list_transcripts'):
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        # 1. Try to list all transcripts to find the best match
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        
+        # 2. Try English (manual then generated)
+        try:
+            transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
+        except:
+            # 3. Fallback: Take the first available transcript and translate to English
             try:
-                transcript = transcript_list.find_manually_created_transcript(['en'])
+                # Get the first available transcript (any language)
+                first_transcript = next(iter(transcript_list))
+                transcript = first_transcript.translate('en')
             except:
-                transcript = transcript_list.find_generated_transcript(['en'])
-            caps = transcript.fetch()
-        else:
-            # Fallback to older API style
-            caps = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+                # Last resort: just get anything
+                transcript = transcript_list.find_generated_transcript(['en', 'hi', 'es', 'fr'])
+
+        caps = transcript.fetch()
             
         return [
             {
