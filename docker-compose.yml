@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: youtube_chatbot
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./cache:/app/cache
+      - ./models:/app/models

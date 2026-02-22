@@ -3,7 +3,17 @@
 from typing import List
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
+import os
+import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Prioritize Streamlit Secrets for cloud deployment
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+if GROQ_API_KEY:
+    os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
 
 # --------------------------
@@ -48,11 +58,11 @@ def format_evidence(docs: List[Document]) -> str:
 # --------------------------
 # Make answer chain with strict hallucination control
 # --------------------------
-def make_answer_chain(model: str = "mistral"):
-    llm = ChatOllama(
+def make_answer_chain(model: str = "llama-3.3-70b-versatile"):
+    llm = ChatGroq(
         model=model,
-        temperature=0,      # ✅ reduce hallucination by disabling randomness
-        num_predict=350,
+        temperature=0,
+        max_tokens=350,
     )
 
     system = """You are a YouTube video assistant.
@@ -95,11 +105,11 @@ Return the answer in this format exactly:
 # --------------------------
 # Make general knowledge chain (FALLBACK)
 # --------------------------
-def make_general_knowledge_chain(model: str = "mistral"):
-    llm = ChatOllama(
+def make_general_knowledge_chain(model: str = "llama-3.3-70b-versatile"):
+    llm = ChatGroq(
         model=model,
-        temperature=0.7,    # ✅ more creative for general knowledge
-        num_predict=350,
+        temperature=0.7,
+        max_tokens=350,
     )
 
     system = """You are a helpful AI assistant.

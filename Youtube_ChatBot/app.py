@@ -36,10 +36,7 @@ with st.sidebar:
     st.header("⚙️ System Status")
     st.write(f"**Device:** {device.upper()}")
     st.write(f"**Compute:** {dtype}")
-    if device == "cpu":
-        st.warning("⚠️ Using CPU. Processing long videos (>10 mins) will take time.")
-    else:
-        st.success("🚀 GPU Acceleration Active!")
+    st.success("⚡ Powered by Groq AI (Llama 3.3)")
 
 
 # --------------------------
@@ -108,7 +105,7 @@ def build_index(video_url: str):
 # QA PIPELINE
 # --------------------------
 def run_qa(retriever, question: str):
-    rewriter = make_multi_query_rewriter(model="mistral", n=1)
+    rewriter = make_multi_query_rewriter(model="llama-3.3-70b-versatile", n=1)
     raw_queries = rewriter.invoke(question)
 
     queries = []
@@ -138,7 +135,7 @@ def run_qa(retriever, question: str):
     if len(evidence.strip()) < 60:
         return "Not discussed in the video.", queries, evidence
 
-    chain = make_answer_chain(model="mistral")
+    chain = make_answer_chain(model="llama-3.3-70b-versatile")
     answer = chain.invoke({"evidence": evidence, "question": question}).content
     return answer, queries, evidence
 
@@ -190,7 +187,7 @@ with col2:
                 st.write("---")
                 st.markdown("### 🌐 General Knowledge Fallback")
                 with st.spinner("Searching..."):
-                    gen_chain = make_general_knowledge_chain(model="mistral")
+                    gen_chain = make_general_knowledge_chain(model="llama-3.3-70b-versatile")
                     fallback_answer = gen_chain.invoke({"question": question}).content
                     st.write(fallback_answer)
             

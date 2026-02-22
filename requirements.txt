@@ -1,0 +1,16 @@
+langchain-groq
+python-dotenv
+streamlit
+yt-dlp
+faster-whisper
+langchain
+langchain-community
+langchain-core
+langchain-ollama
+langchain-text-splitters
+faiss-cpu
+sentence-transformers
+torch
+youtube-transcript-api
+pathlib
+urllib3

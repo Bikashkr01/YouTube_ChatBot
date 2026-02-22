@@ -7,7 +7,7 @@ from rank_bm25 import BM25Okapi
 
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableLambda
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 
 
 def _tokenize(text: str) -> List[str]:
@@ -61,8 +61,8 @@ class HybridRetriever:
 
 
 # ✅ STRICTER MULTI-QUERY REWRITER
-def make_multi_query_rewriter(model: str = "mistral", n: int = 3):
-    llm = ChatOllama(model=model, temperature=0.2)
+def make_multi_query_rewriter(model: str = "llama-3.3-70b-versatile", n: int = 3):
+    llm = ChatGroq(model=model, temperature=0.2)
 
     def _clean(line: str) -> str:
         line = line.strip()
