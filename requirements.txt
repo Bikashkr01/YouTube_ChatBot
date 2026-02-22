@@ -1,7 +1,8 @@
 langchain-groq
 python-dotenv
+rank-bm25
 streamlit
-yt-dlp
+yt-dlp>=2024.12.06
 faster-whisper
 langchain
 langchain-community

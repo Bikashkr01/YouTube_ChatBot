@@ -35,13 +35,27 @@ Open your browser and go to `http://your-server-ip:8501`.
 
 ---
 
-## ☁️ Option 2: Streamlit Cloud (Quick but Limited)
+## ☁️ Option 2: Streamlit Community Cloud (Best for "Web App")
 
-You *can* deploy to [Streamlit Community Cloud](https://streamlit.io/cloud) by connecting your GitHub repo, but there are major limitations:
-- **No Ollama**: Streamlit Cloud doesn't support running local LLMs like Ollama. You would need to modify the code to use an API (like OpenAI or Groq).
-- **Low Resources**: Whisper transcription might be very slow or crash on the free tier.
+This is the recommended way to have a public link for your bot.
 
-**Recommendation**: Use a VPS with Docker for the best experience.
+### 1. Account Setup
+1. Go to [share.streamlit.io](https://share.streamlit.io/) and log in with your GitHub account.
+2. Click **"Create app"**.
+3. Select your repository: `Bikashkr01/YouTube_ChatBot`.
+4. Set the Main file path: `Youtube_ChatBot/app.py`.
+
+### 2. Configure Secrets (CRITICAL)
+Before clicking "Deploy", click on **"Advanced settings"** and enter your Groq API key in the **Secrets** box exactly like this:
+
+```toml
+GROQ_API_KEY = "your_key_here"
+```
+
+### 3. Deploy
+1. Click **"Deploy!"**.
+2. Streamlit will install `ffmpeg` (from `packages.txt`) and your Python libraries automatically.
+3. Your app will be live at a URL like `https://youtube-chatbot-bikash.streamlit.app`.
 
 ---
 
