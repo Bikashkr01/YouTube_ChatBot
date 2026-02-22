@@ -3,6 +3,7 @@ python-dotenv
 rank-bm25
 streamlit
 yt-dlp>=2024.12.06
+webvtt-py
 faster-whisper
 langchain
 langchain-community

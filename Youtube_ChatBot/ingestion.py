@@ -126,39 +126,77 @@ def download_audio(url: str) -> tuple[str, str, str]:
 # 3) YouTube captions (SAFE VERSION)
 # --------------------------
 def fetch_captions_segments(video_id: str):
+    # 1. Try YouTubeTranscriptApi
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
-        
-        # 1. Try to list all transcripts to find the best match
         transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
         
-        # 2. Try English (manual then generated)
         try:
             transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
         except:
-            # 3. Fallback: Take the first available transcript and translate to English
             try:
-                # Get the first available transcript (any language)
                 first_transcript = next(iter(transcript_list))
                 transcript = first_transcript.translate('en')
             except:
-                # Last resort: just get anything
                 transcript = transcript_list.find_generated_transcript(['en', 'hi', 'es', 'fr'])
 
         caps = transcript.fetch()
-            
-        return [
-            {
-                "start": c["start"],
-                "end": c["start"] + c.get("duration", 0.0),
-                "text": c["text"],
-            }
-            for c in caps
-            if c.get("text", "").strip()
-        ]
+        return [{"start": c["start"], "end": c["start"] + c.get("duration", 0.0), "text": c["text"]} 
+                for c in caps if c.get("text", "").strip()]
     except Exception as e:
-        print(f"[DEBUG] Captions not available via API: {e}")
-        return None
+        print(f"[DEBUG] YouTubeTranscriptApi failed: {e}")
+
+    # 2. Fallback to yt-dlp for transcripts (Often more resilient on Cloud IPs)
+    try:
+        print(f"[DEBUG] Trying yt-dlp transcript fallback for {video_id}")
+        import requests
+        import webvtt
+        from io import StringIO
+        
+        url = f"https://www.youtube.com/watch?v={video_id}"
+        ydl_opts = {
+            "skip_download": True,
+            "writesubtitles": True,
+            "writeautomaticsub": True,
+            "subtitleslangs": ["en.*"],
+            "quiet": True,
+            "nocheckcertificate": True,
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            
+        # Look for English subtitles or auto-captions
+        sub_url = None
+        subs = info.get("subtitles", {}) or info.get("automatic_captions", {})
+        for lang in subs:
+            if lang.startswith("en"):
+                # Prefer json or vtt
+                formats = subs[lang]
+                for f in formats:
+                    if f.get("ext") == "vtt":
+                        sub_url = f.get("url")
+                        break
+                if sub_url: break
+        
+        if sub_url:
+            r = requests.get(sub_url)
+            if r.status_code == 200:
+                vtt_content = r.text
+                segments = []
+                for caption in webvtt.read_buffer(StringIO(vtt_content)):
+                    segments.append({
+                        "start": caption.start_in_seconds,
+                        "end": caption.end_in_seconds,
+                        "text": caption.text.strip().replace("\n", " ")
+                    })
+                return segments
+
+    except Exception as e:
+        print(f"[DEBUG] yt-dlp transcript fallback failed: {e}")
+
+    return None
 
 
 # --------------------------

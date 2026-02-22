@@ -83,19 +83,34 @@ def build_index(video_url: str):
             )
             method = "Cached Index"
         else:
-            st.write("🎙️ Searching for transcripts...")
-            # Try to get segments BEFORE downloading audio
-            segments, method = get_segments(video_id, audio_path=None)
+            try:
+                st.write("🎙️ Searching for transcripts...")
+                segments, method = get_segments(video_id, audio_path=None)
 
-            if not segments:
-                st.write("📥 Downloading audio for AI transcription...")
-                _, _, audio_path = download_audio(video_url)
-                st.write(f"🧠 Transcribing with AI... (using {device.upper()})")
-                segments, method = get_segments(video_id, audio_path)
+                if not segments:
+                    st.write("📥 Downloading audio for AI transcription...")
+                    _, _, audio_path = download_audio(video_url)
+                    st.write(f"🧠 Transcribing with AI... (using {device.upper()})")
+                    segments, method = get_segments(video_id, audio_path)
 
-            if not segments:
-                st.error("Could not retrieve transcript via API or AI Transcription.")
-                st.stop()
+                if not segments:
+                    st.error("No transcript found for this video. Please try another video.")
+                    st.stop()
+            except Exception as e:
+                if "DownloadError" in str(type(e)) or "Sign in to confirm" in str(e):
+                    st.error("❌ **YouTube Blocked this Request**")
+                    st.info("""
+                    YouTube has blocked the Cloud IP address of this web app.
+                    
+                    **Common Fixes:**
+                    1. Try a different YouTube video (some have fewer restrictions).
+                    2. Ensure the video is not Age-Restricted or Private.
+                    3. Run this app locally (it works perfectly on 99% of home connections!).
+                    """)
+                    st.stop()
+                else:
+                    st.error(f"Processing Error: {str(e)}")
+                    st.stop()
 
             st.write("🧠 Organizing knowledge...")
             vs = create_vector_store_from_segments(segments, embeddings)
